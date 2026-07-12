@@ -61,3 +61,32 @@ def test_reset_clears_collection(index):
 def test_hash_text_is_deterministic():
     assert hash_text("hello world") == hash_text("hello world")
     assert hash_text("hello world") != hash_text("hello worlds")
+
+
+def test_add_chunks_from_differently_sized_documents_does_not_raise(index):
+    """
+    Regression test for the production bug: adding a short document and then
+    a much longer, more varied document into the SAME persistent collection
+    must not raise Chroma's InvalidArgumentError('Collection expecting
+    embedding with dimension of X, got Y'). This is the exact failure a real
+    user hit deploying this app — seed data (small vocabulary) followed by a
+    real uploaded PDF (larger vocabulary) landed in the same collection.
+    """
+    small_doc_chunks = ["Short filing text about margins."]
+    index.refit_embedder(small_doc_chunks)
+    index.add_chunks(document_id=1, chunks=small_doc_chunks)
+
+    large_doc_chunks = index.chunk_text(
+        "NVIDIA Corporation SEC Filing Summary. " +
+        "Revenue for the quarter increased thirty four percent year over year "
+        "driven by strong demand for data center accelerators across every "
+        "major hyperscale customer segment. Gross margin improved substantially "
+        "versus the prior year period. Management commentary struck a highly "
+        "confident forward looking tone regarding continued AI infrastructure "
+        "investment cycles among enterprise and sovereign customers alike. " * 5
+    )
+    index.refit_embedder(large_doc_chunks)  # simulates a second, independent ingestion call
+    index.add_chunks(document_id=2, chunks=large_doc_chunks)  # must not raise
+
+    results = index.query("revenue guidance", top_k=3)
+    assert len(results) > 0
