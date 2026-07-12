@@ -121,29 +121,35 @@ runs the exact same pipeline against a bundled sample 10-K excerpt in
 ## Deployment (Render)
 
 `gunicorn` is already in `requirements.txt` and a `render.yaml` Blueprint is
-included for one-click infra-as-code deployment. Two options:
+included for one-click infra-as-code deployment. Tables are also
+auto-created on app startup (`Base.metadata.create_all()` in `app.py`), and
+`load_data.py` is idempotent — safe to run on every deploy without creating
+duplicate seed rows. Together, this means **neither option below requires
+Shell access**, which the free instance type doesn't support (Shell is a
+Starter-plan-and-up feature).
 
 ### Option A — Blueprint (recommended, requires a paid instance for the disk)
 
 1. Push this repo to GitHub under `github.com/aitmai/research-intelligence-assistant`.
 2. In the Render dashboard, go to **Blueprints → New Blueprint Instance** and
-   point it at the repo. Render reads `render.yaml` automatically.
+   point it at the repo. Render reads `render.yaml` automatically — its
+   build command already runs `create_tables.py` and `load_data.py` for you.
 3. Render will prompt for the two `sync: false` secrets — enter your real
    `ANTHROPIC_API_KEY` and `EDGAR_USER_AGENT` there (never in the yaml file).
 4. Deploy. The attached 1GB disk at `/data` persists the SQLite database and
    the Chroma vector store across restarts and deploys.
-5. Once live, open a shell from the Render dashboard (or SSH) and run the
-   one-time setup:
-   ```bash
-   python create_tables.py
-   python load_data.py   # optional seed data
-   ```
 
-### Option B — Manual web service (works on the free tier, no persistent disk)
+### Option B — Manual web service (works on the free tier, no persistent disk, no Shell needed)
 
 1. Push to GitHub as above.
 2. In Render: **New → Web Service**, connect the repo.
-3. Build command: `pip install -r requirements.txt`
+3. Build command:
+   ```
+   pip install -r requirements.txt && python create_tables.py && python load_data.py
+   ```
+   Running the setup scripts here (instead of via Shell) is what makes this
+   work on the free tier — the Build Command runs regardless of instance
+   type, unlike Shell.
 4. Start command: `gunicorn app:app --bind 0.0.0.0:$PORT`
 5. Add environment variables from the table above in the Render dashboard
    (Environment tab) — at minimum `ANTHROPIC_API_KEY`, `EDGAR_USER_AGENT`,
@@ -151,17 +157,15 @@ included for one-click infra-as-code deployment. Two options:
 6. Leave `DATABASE_URL` and `CHROMA_PATH` at their defaults
    (`sqlite:///via.db`, `./chroma_store`).
 7. **Tradeoff:** without a persistent disk, Render's free-tier filesystem is
-   ephemeral — the SQLite DB and Chroma index reset on every deploy and on
-   any restart after idle sleep. Fine for demoing the pipeline live; not
-   fine for real production data. If that matters, point `DATABASE_URL` at
-   a Render-managed Postgres instance (free tier available) so briefs/signals
-   persist even though the Chroma vector index still resets — you'd just
-   re-run ingestion after a restart.
-8. After first deploy, open the Shell tab and run:
-   ```bash
-   python create_tables.py
-   python load_data.py
-   ```
+   ephemeral — the SQLite DB and Chroma index reset on every deploy, and
+   possibly on restart after idle sleep depending on Render's current free-tier
+   behavior. Since the Build Command re-seeds automatically on every deploy,
+   the app self-heals on redeploy either way; a wake-from-sleep with no
+   redeploy just means whatever you added via `/brief` or `/monitor` since
+   the last deploy is gone. Fine for demoing the pipeline live; not fine for
+   real production data. If that matters, point `DATABASE_URL` at a
+   Render-managed Postgres instance (free tier available) so briefs/signals
+   persist even though the Chroma vector index still resets on redeploy.
 
 ## Security Note
 

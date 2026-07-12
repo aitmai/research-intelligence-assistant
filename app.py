@@ -37,6 +37,12 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 engine = create_engine(Config.DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 
+# Auto-create tables on startup. This makes the app self-sufficient on
+# platforms/tiers with no shell access (e.g. Render's free instance type) —
+# create_tables.py is still useful for local dev clarity, but the app no
+# longer depends on someone running it manually before first launch.
+Base.metadata.create_all(engine)
+
 _index = None
 _extractor = None
 

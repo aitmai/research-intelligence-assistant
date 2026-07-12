@@ -14,7 +14,7 @@ Usage:
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from config import Config
@@ -28,10 +28,19 @@ def main():
     engine = create_engine(Config.DATABASE_URL)
     Session = sessionmaker(bind=engine)
     db = Session()
+
+    # Idempotency check: this script is designed to also run from Render's
+    # Build Command on every deploy (useful on tiers with no shell access),
+    # so re-running it must not create duplicate seed rows.
+    content_hash = hash_text(SAMPLE_TEXT)
+    existing = db.scalar(select(Document).where(Document.content_hash == content_hash))
+    if existing:
+        print("Seed data already present (matched by content hash) — skipping.")
+        return
+
     index = VectorIndex()
 
     # --- ingest the sample filing through the real pipeline ---
-    content_hash = hash_text(SAMPLE_TEXT)
     doc = Document(
         source_type="edgar_10k",
         title="DEMO 10-K excerpt",

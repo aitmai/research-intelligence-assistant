@@ -13,7 +13,7 @@ services:
     name: research-intelligence-assistant
     runtime: python
     plan: starter
-    buildCommand: "pip install -r requirements.txt"
+    buildCommand: "pip install -r requirements.txt && python create_tables.py && python load_data.py"
     startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
     envVars:
       - key: ANTHROPIC_API_KEY
