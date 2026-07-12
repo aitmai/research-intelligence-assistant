@@ -40,13 +40,11 @@ class ClaudeExtractor:
             model=Config.CLAUDE_TAG_MODEL,
             api_key=Config.ANTHROPIC_API_KEY,
             max_tokens=10,
-            temperature=0,
         )
         self.synthesis_llm = ChatAnthropic(
             model=Config.CLAUDE_SYNTHESIS_MODEL,
             api_key=Config.ANTHROPIC_API_KEY,
             max_tokens=1500,
-            temperature=0,
         )
         self.tag_chain = ChatPromptTemplate.from_template(TAG_PROMPT) | self.tag_llm | StrOutputParser()
 
