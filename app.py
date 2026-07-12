@@ -12,6 +12,7 @@ LangChain-orchestrated two-tier Claude extraction), two product modes:
 Run with:  python app.py   (after create_tables.py and, optionally, load_data.py)
 """
 from __future__ import annotations
+import logging
 import os
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +28,10 @@ from core.claude_client import ClaudeExtractor
 from core.retriever import run_extraction
 from ingestion.loaders import load_upload
 from ingestion import edgar_fetch
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
+
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = Config.SECRET_KEY
@@ -115,22 +120,35 @@ def brief():
     document_ids = []
     cache_hits = 0
 
-    for f in files:
-        if not f or not f.filename:
-            continue
-        save_path = UPLOAD_DIR / f.filename
-        f.save(save_path)
-        text = load_upload(str(save_path))
-        doc, was_cached = ingest_document(db, index, "upload", f.filename, text)
-        document_ids.append(doc.id)
-        cache_hits += int(was_cached)
+    try:
+        for f in files:
+            if not f or not f.filename:
+                continue
+            save_path = UPLOAD_DIR / f.filename
+            f.save(save_path)
+            text = load_upload(str(save_path))
+            doc, was_cached = ingest_document(db, index, "upload", f.filename, text)
+            document_ids.append(doc.id)
+            cache_hits += int(was_cached)
 
-    result = run_extraction(
-        index, extractor, mode="brief",
-        query=f"Market opportunity, competitors, and risks for: {topic}",
-        document_ids=document_ids,
-        topic=topic,
-    )
+        result = run_extraction(
+            index, extractor, mode="brief",
+            query=f"Market opportunity, competitors, and risks for: {topic}",
+            document_ids=document_ids,
+            topic=topic,
+        )
+    except Exception:
+        # Covers PDF/HTML parsing failures, DB errors, and anything else
+        # outside the already-guarded Claude API call. Logged so it shows
+        # up in `render logs` instead of only a generic 500 in the browser.
+        logger.exception("Brief generation failed (topic=%r)", topic)
+        db.rollback()
+        flash("Something went wrong generating this brief. Check the server logs for details, "
+              "or try again with a smaller/simpler document.")
+        return redirect(url_for("brief"))
+
+    if result.get("error"):
+        flash(f"Extraction completed with an error: {result['error']}")
 
     brief_row = Brief(
         topic=topic,
@@ -198,35 +216,44 @@ def monitor():
             filings_text.append((f"{ticker} sample 10-K excerpt", sample_path.read_text(), datetime.utcnow()))
 
     signals_created = []
-    for title, text, filing_date in filings_text:
-        doc, _cached = ingest_document(
-            db, index, "edgar_10k", title, text,
-            company_ticker=ticker, filing_date=filing_date,
-        )
-        result = run_extraction(
-            index, extractor, mode="monitor",
-            query=f"Revenue guidance, margin commentary, and management sentiment for {ticker}",
-            document_ids=[doc.id],
-            ticker=ticker,
-        )
-        signal = Signal(
-            document_id=doc.id,
-            company_ticker=ticker,
-            filing_date=filing_date,
-            guidance_direction=result.get("guidance_direction"),
-            margin_trend=result.get("margin_trend"),
-            sentiment_score=result.get("sentiment_score"),
-            key_quote=result.get("key_quote"),
-            confidence=result.get("confidence"),
-        )
-        db.add(signal)
-        db.add(RunHistory(
-            mode="monitor", input_summary=f"{ticker}:{title}",
-            tag_model=Config.CLAUDE_TAG_MODEL, synthesis_model=Config.CLAUDE_SYNTHESIS_MODEL,
-            chunks_considered=result.get("_meta", {}).get("chunks_considered"),
-            chunks_used=result.get("_meta", {}).get("chunks_used"),
-        ))
-        signals_created.append(signal)
+    try:
+        for title, text, filing_date in filings_text:
+            doc, _cached = ingest_document(
+                db, index, "edgar_10k", title, text,
+                company_ticker=ticker, filing_date=filing_date,
+            )
+            result = run_extraction(
+                index, extractor, mode="monitor",
+                query=f"Revenue guidance, margin commentary, and management sentiment for {ticker}",
+                document_ids=[doc.id],
+                ticker=ticker,
+            )
+            if result.get("error"):
+                flash(f"Extraction completed with an error for {title}: {result['error']}")
+            signal = Signal(
+                document_id=doc.id,
+                company_ticker=ticker,
+                filing_date=filing_date,
+                guidance_direction=result.get("guidance_direction"),
+                margin_trend=result.get("margin_trend"),
+                sentiment_score=result.get("sentiment_score"),
+                key_quote=result.get("key_quote"),
+                confidence=result.get("confidence"),
+            )
+            db.add(signal)
+            db.add(RunHistory(
+                mode="monitor", input_summary=f"{ticker}:{title}",
+                tag_model=Config.CLAUDE_TAG_MODEL, synthesis_model=Config.CLAUDE_SYNTHESIS_MODEL,
+                chunks_considered=result.get("_meta", {}).get("chunks_considered"),
+                chunks_used=result.get("_meta", {}).get("chunks_used"),
+            ))
+            signals_created.append(signal)
+    except Exception:
+        logger.exception("Signal extraction failed (ticker=%r)", ticker)
+        db.rollback()
+        flash("Something went wrong extracting signals. Check the server logs for details.")
+        return redirect(url_for("monitor"))
+
     db.commit()
 
     return render_template("monitor_result.html", ticker=ticker, signals=signals_created)

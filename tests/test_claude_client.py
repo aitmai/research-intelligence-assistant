@@ -77,3 +77,21 @@ class TestSynthesize:
             result = extractor.synthesize("monitor", ["some excerpt"], ticker="DEMO")
             assert result["confidence"] == "low"
             assert "error" in result
+
+    def test_synthesize_handles_api_call_failure_gracefully(self):
+        """
+        Regression test: a real Anthropic API failure (bad/missing key, rate
+        limit, invalid model, network error) must degrade to a low-confidence
+        error dict, not raise and crash the Flask request into a 500.
+        """
+        def _raise(*args, **kwargs):
+            def _invoke(_input):
+                raise Exception("Error code: 401 - authentication_error: invalid x-api-key")
+            return RunnableLambda(_invoke)
+
+        with patch("core.claude_client.ChatAnthropic", side_effect=_raise):
+            extractor = ClaudeExtractor()
+            result = extractor.synthesize("monitor", ["some excerpt"], ticker="DEMO")
+            assert result["confidence"] == "low"
+            assert "error" in result
+            assert "401" in result["error"]

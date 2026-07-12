@@ -12,6 +12,7 @@ composition instead of hand-rolled API calls.
 """
 from __future__ import annotations
 import json
+import logging
 import re
 from typing import List, Tuple
 
@@ -21,6 +22,8 @@ from langchain_anthropic import ChatAnthropic
 
 from config import Config
 from core.prompts import TAG_PROMPT, MODES
+
+logger = logging.getLogger(__name__)
 
 
 def _strip_json_fences(text: str) -> str:
@@ -69,19 +72,33 @@ class ClaudeExtractor:
     def synthesize(self, mode: str, context_chunks: List[str], **prompt_vars) -> dict:
         """
         Tier 2: Sonnet synthesis pass. Returns a dict matching the mode's
-        JSON schema, with confidence downgraded if parsing fails outright
-        rather than raising and losing the run.
+        JSON schema. Never raises: an API-level failure (bad/missing key,
+        rate limit, invalid model name, network error) or a JSON parsing
+        failure both degrade to a low-confidence error dict instead of
+        crashing the request with an unhandled 500.
         """
         mode_config = MODES[mode]
         context = "\n\n---\n\n".join(context_chunks) if context_chunks else "(no relevant excerpts found)"
         prompt = ChatPromptTemplate.from_template(mode_config["synthesis_prompt"])
         chain = prompt | self.synthesis_llm | StrOutputParser()
 
-        raw = chain.invoke({
-            **prompt_vars,
-            "context": context,
-            "schema": json.dumps(mode_config["schema"]),
-        })
+        try:
+            raw = chain.invoke({
+                **prompt_vars,
+                "context": context,
+                "schema": json.dumps(mode_config["schema"]),
+            })
+        except Exception as e:
+            # This is the most common real-world failure point: bad/missing
+            # ANTHROPIC_API_KEY, an invalid model string, hitting a rate
+            # limit, or a transient network error talking to the Anthropic
+            # API. Logged here so it shows up in `render logs` / stdout
+            # instead of only surfacing as a generic 500 to the browser.
+            logger.exception("Claude synthesis call failed (mode=%s)", mode)
+            return {
+                "error": f"Claude API call failed: {e}",
+                "confidence": "low",
+            }
 
         cleaned = _strip_json_fences(raw)
         try:
