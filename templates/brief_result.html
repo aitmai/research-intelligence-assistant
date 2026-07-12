@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Opportunity Brief: {{ brief.topic }}</h1>
+<span class="badge badge-{{ brief.confidence }}">confidence: {{ brief.confidence }}</span>
+
+<h3>Market size</h3>
+<p>{{ brief.market_size or "Not covered in the provided documents." }}</p>
+
+<h3>Competitors</h3>
+<ul>
+  {% for c in (brief.competitors or []) %}<li>{{ c }}</li>{% endfor %}
+</ul>
+
+<h3>Risks</h3>
+<ul>
+  {% for r in (brief.risks or []) %}<li>{{ r }}</li>{% endfor %}
+</ul>
+
+<h3>Open questions</h3>
+<ul>
+  {% for q in (brief.open_questions or []) %}<li>{{ q }}</li>{% endfor %}
+</ul>
+
+<h3>Recommendation</h3>
+<p>{{ brief.recommendation }}</p>
+
+{% if result._meta %}
+<p class="meta">Chunks considered: {{ result._meta.chunks_considered }} / used after relevance filtering: {{ result._meta.chunks_used }}</p>
+{% endif %}
+
+<a href="{{ url_for('brief') }}">&larr; New brief</a>
+{% endblock %}

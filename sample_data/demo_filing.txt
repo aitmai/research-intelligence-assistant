@@ -1,0 +1,39 @@
+Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations
+
+Revenue for the quarter increased 8% year-over-year, driven primarily by strength in our cloud
+services segment, though growth moderated compared to the prior quarter's 14% increase. We are
+revising our full-year revenue guidance downward to reflect softer enterprise demand in Europe
+and continued foreign exchange headwinds. We now expect full-year revenue growth in the range of
+5% to 7%, compared to our previous guidance of 8% to 10%.
+
+Gross margin for the quarter was 62.4%, down from 64.1% in the prior year period, primarily due
+to increased cloud infrastructure costs and a higher mix of lower-margin hardware revenue. We
+expect margin pressure to persist through the next two quarters as we continue to invest in data
+center capacity ahead of anticipated demand recovery.
+
+Operating expenses increased 11% year-over-year, reflecting continued investment in research and
+development, particularly in artificial intelligence infrastructure and go-to-market expansion
+for our newer product lines. We remain committed to these investments despite near-term margin
+impact, as we believe they position the company well for long-term growth.
+
+Management commentary during the earnings call struck a cautious but not alarmed tone. The CFO
+noted, "We're seeing real macro pressure in a couple of key verticals, but our pipeline for next
+year gives us confidence in the underlying demand story." The CEO added that the company was
+"leaning into the investment cycle now so we're not playing catch-up later," while acknowledging
+that "the next couple of quarters will likely be choppier than we'd like."
+
+Liquidity and Capital Resources
+
+As of the end of the quarter, we had cash and cash equivalents of $4.2 billion, compared to $4.6
+billion at the end of the prior fiscal year. The decrease was primarily attributable to increased
+capital expenditures related to data center expansion and continued share repurchases under our
+existing buyback program. We believe our current cash position, together with cash generated from
+operations, will be sufficient to meet our working capital and capital expenditure requirements
+for at least the next twelve months.
+
+Risk Factors (excerpt)
+
+Our results are subject to fluctuations in foreign currency exchange rates, particularly the euro
+and British pound, given our significant international revenue exposure. Continued macroeconomic
+uncertainty in Europe could further pressure enterprise spending and adversely affect our ability
+to meet revised guidance.

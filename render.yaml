@@ -1,0 +1,46 @@
+# Render Blueprint for Research Intelligence Assistant.
+# Deploy via: https://dashboard.render.com/blueprints -> New Blueprint Instance
+# pointing at this repo. Or use the Render dashboard manually (see README).
+#
+# NOTE: the persistent disk below requires a paid instance type (Starter or
+# higher) — Render's free tier does not support attached disks, which means
+# the SQLite DB and Chroma vector store would be wiped on every deploy/restart
+# on the free tier. See README "Deployment" section for the free-tier-safe
+# alternative (managed Postgres + accept that Chroma re-indexes on deploy).
+
+services:
+  - type: web
+    name: research-intelligence-assistant
+    runtime: python
+    plan: starter
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CLAUDE_TAG_MODEL
+        value: claude-haiku-4-5-20251001
+      - key: CLAUDE_SYNTHESIS_MODEL
+        value: claude-sonnet-5
+      - key: DATABASE_URL
+        value: sqlite:////data/via.db
+      - key: CHROMA_PATH
+        value: /data/chroma_store
+      - key: EMBEDDING_PROVIDER
+        value: tfidf
+      - key: CHUNK_SIZE
+        value: "800"
+      - key: CHUNK_OVERLAP
+        value: "100"
+      - key: TOP_K_RETRIEVAL
+        value: "6"
+      - key: EDGAR_USER_AGENT
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_DEBUG
+        value: "0"
+    disk:
+      name: research-intel-data
+      mountPath: /data
+      sizeGB: 1

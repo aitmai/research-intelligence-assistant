@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Past Briefs</h1>
+<table>
+  <thead><tr><th>Topic</th><th>Confidence</th><th>Created</th></tr></thead>
+  <tbody>
+    {% for b in briefs %}
+    <tr>
+      <td>{{ b.topic }}</td>
+      <td><span class="badge badge-{{ b.confidence }}">{{ b.confidence }}</span></td>
+      <td>{{ b.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3">No briefs yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

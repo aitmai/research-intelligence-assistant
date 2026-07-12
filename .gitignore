@@ -1,0 +1,49 @@
+# Environment
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Vector store
+chroma_store/
+chroma_test*/
+
+# Uploads (user-supplied documents shouldn't be committed)
+uploads/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Node (if a future front-end build is added)
+node_modules/
+.next/
+.vercel/
+
+# Auto-added by gitpush.py
+credentials.json
+*.pyc
+*.pyo
+secrets.json
+service_account.json
+token.json

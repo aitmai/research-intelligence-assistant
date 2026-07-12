@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Opportunity Brief</h1>
+<p>Upload research documents (PDF, TXT, or HTML) about a business idea and describe the topic.</p>
+
+<form method="POST" enctype="multipart/form-data">
+  <label>Topic / business idea
+    <input type="text" name="topic" placeholder="e.g. Embedded insurance for gig platforms" required>
+  </label>
+
+  <label>Documents (market research, competitor filings, news)
+    <input type="file" name="documents" multiple required>
+  </label>
+
+  <button type="submit">Generate Brief</button>
+</form>
+{% endblock %}

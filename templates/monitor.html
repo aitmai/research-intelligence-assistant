@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Signal Monitor</h1>
+<p>Fetch recent SEC filings for a ticker and extract structured guidance/margin/sentiment signals.</p>
+
+<form method="POST">
+  <label>Ticker
+    <input type="text" name="ticker" placeholder="e.g. AAPL" required>
+  </label>
+
+  <label class="checkbox">
+    <input type="checkbox" name="use_sample">
+    Use sample filing instead of live EDGAR fetch (useful if network access to sec.gov is restricted)
+  </label>
+
+  <button type="submit">Run Signal Extraction</button>
+</form>
+{% endblock %}

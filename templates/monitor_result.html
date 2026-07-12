@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Signal Timeline: {{ ticker }}</h1>
+
+<table>
+  <thead>
+    <tr><th>Filing date</th><th>Guidance</th><th>Margin trend</th><th>Sentiment</th><th>Key quote</th><th>Confidence</th></tr>
+  </thead>
+  <tbody>
+    {% for s in signals %}
+    <tr>
+      <td>{{ s.filing_date.strftime("%Y-%m-%d") if s.filing_date else "-" }}</td>
+      <td><span class="badge badge-{{ s.guidance_direction }}">{{ s.guidance_direction }}</span></td>
+      <td>{{ s.margin_trend }}</td>
+      <td>{{ "%.2f"|format(s.sentiment_score) if s.sentiment_score is not none else "-" }}</td>
+      <td>"{{ s.key_quote }}"</td>
+      <td><span class="badge badge-{{ s.confidence }}">{{ s.confidence }}</span></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6">No signals yet for {{ ticker }}.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{{ url_for('monitor') }}">&larr; Run another ticker</a>
+{% endblock %}

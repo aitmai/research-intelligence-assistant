@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Research Intelligence Assistant</h1>
+<p>One shared retrieval pipeline, two internal research workflows:</p>
+
+<div class="cards">
+  <a class="card" href="{{ url_for('brief') }}">
+    <h2>Opportunity Brief</h2>
+    <p>Upload market research, competitor filings, or news for a new business idea.
+       Get back a structured brief: market size, competitors, risks, open questions.</p>
+  </a>
+  <a class="card" href="{{ url_for('monitor') }}">
+    <h2>Signal Monitor</h2>
+    <p>Pull recent SEC filings for a ticker and extract structured signals — guidance
+       direction, margin trend, and management sentiment — tracked over time.</p>
+  </a>
+</div>
+{% endblock %}
