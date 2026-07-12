@@ -137,14 +137,14 @@ def brief():
             document_ids=document_ids,
             topic=topic,
         )
-    except Exception:
+    except Exception as e:
         # Covers PDF/HTML parsing failures, DB errors, and anything else
-        # outside the already-guarded Claude API call. Logged so it shows
-        # up in `render logs` instead of only a generic 500 in the browser.
+        # outside the already-guarded Claude API call. Logged so the full
+        # traceback shows up in `render logs`; the short message is also
+        # flashed directly so diagnosing doesn't require log access.
         logger.exception("Brief generation failed (topic=%r)", topic)
         db.rollback()
-        flash("Something went wrong generating this brief. Check the server logs for details, "
-              "or try again with a smaller/simpler document.")
+        flash(f"Something went wrong generating this brief: {type(e).__name__}: {e}")
         return redirect(url_for("brief"))
 
     if result.get("error"):
@@ -248,10 +248,10 @@ def monitor():
                 chunks_used=result.get("_meta", {}).get("chunks_used"),
             ))
             signals_created.append(signal)
-    except Exception:
+    except Exception as e:
         logger.exception("Signal extraction failed (ticker=%r)", ticker)
         db.rollback()
-        flash("Something went wrong extracting signals. Check the server logs for details.")
+        flash(f"Something went wrong extracting signals: {type(e).__name__}: {e}")
         return redirect(url_for("monitor"))
 
     db.commit()
