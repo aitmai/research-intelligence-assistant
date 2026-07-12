@@ -53,3 +53,34 @@ def test_brief_dedupes_identical_document_content(client):
     db = app_module.SessionLocal()
     count = db.query(Document).count()
     assert count == 1  # same content hash -> reused, not duplicated
+
+
+def test_brief_blocked_once_daily_extraction_cap_reached(client, monkeypatch):
+    """
+    Safety-net regression test: once MAX_DAILY_EXTRACTIONS runs have
+    happened in the trailing 24h, further /brief requests must be blocked
+    with a clear message instead of silently making more Claude API calls.
+    """
+    from config import Config
+    import app as app_module
+
+    monkeypatch.setattr(Config, "MAX_DAILY_EXTRACTIONS", 2)
+
+    def post_once(n):
+        return client.post(
+            "/brief",
+            data={"topic": f"Cap test {n}", "documents": (io.BytesIO(b"Some text."), f"doc{n}.txt")},
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+
+    post_once(1)
+    post_once(2)
+    resp = post_once(3)  # should now be blocked — cap is 2
+
+    assert b"Daily extraction limit reached" in resp.data
+
+    from models import RunHistory
+    db = app_module.SessionLocal()
+    # exactly 2 real runs happened; the 3rd request never reached extraction
+    assert db.query(RunHistory).count() == 2

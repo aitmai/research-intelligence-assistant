@@ -112,6 +112,7 @@ runs the exact same pipeline against a bundled sample 10-K excerpt in
 | `CHUNK_SIZE` | No | `800` | Target chunk size (words) for document splitting |
 | `CHUNK_OVERLAP` | No | `100` | Overlap (words) between adjacent chunks |
 | `TOP_K_RETRIEVAL` | No | `6` | Number of chunks retrieved per extraction run |
+| `MAX_DAILY_EXTRACTIONS` | No | `50` | Hard cap on Claude-calling runs per rolling 24h, across all users — a safety net against runaway usage |
 | `EDGAR_USER_AGENT` | No | placeholder | SEC requires a descriptive User-Agent with a real contact email |
 | `N8N_WEBHOOK_URL` | No | — | Optional webhook for Slack alerting on flagged signals |
 | `SECRET_KEY` | No | dev default | Flask session secret — set a real random value in production |

@@ -78,6 +78,17 @@ button {
   font-weight: 600;
 }
 button:hover { opacity: 0.9; }
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+button:disabled:hover { opacity: 0.6; }
+
+.status-message {
+  color: var(--accent);
+  font-size: 13px;
+  margin: 0;
+}
 
 table { width: 100%; border-collapse: collapse; margin-top: 16px; }
 th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }

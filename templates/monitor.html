@@ -3,7 +3,7 @@
 <h1>Signal Monitor</h1>
 <p>Fetch recent SEC filings for a ticker and extract structured guidance/margin/sentiment signals.</p>
 
-<form method="POST">
+<form method="POST" id="monitor-form">
   <label>Ticker
     <input type="text" name="ticker" placeholder="e.g. AAPL" required>
   </label>
@@ -13,6 +13,19 @@
     Use sample filing instead of live EDGAR fetch (useful if network access to sec.gov is restricted)
   </label>
 
-  <button type="submit">Run Signal Extraction</button>
+  <button type="submit" id="monitor-submit-btn">Run Signal Extraction</button>
+  <p id="monitor-status" class="status-message" hidden>
+    Fetching filings and extracting signals — this can take up to a minute for multiple filings…
+  </p>
 </form>
+
+<script>
+  document.getElementById("monitor-form").addEventListener("submit", function () {
+    var btn = document.getElementById("monitor-submit-btn");
+    btn.disabled = true;
+    btn.textContent = "Running…";
+    document.getElementById("monitor-status").hidden = false;
+  });
+</script>
 {% endblock %}
+

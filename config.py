@@ -34,6 +34,15 @@ class Config:
     # --- SEC EDGAR ---
     EDGAR_USER_AGENT = os.getenv("EDGAR_USER_AGENT", "ResearchIntelligenceAssistant admin@example.com")
 
+    # --- Usage safety net ---
+    # Hard ceiling on Claude-calling extraction runs (briefs + monitor calls
+    # combined) per rolling 24h window, across all users. This exists so a
+    # runaway test loop, a bug, or someone hammering the form can't quietly
+    # burn through a large token/dollar budget unattended — it's a backstop,
+    # not a substitute for setting a spend limit in the Anthropic Console
+    # (Settings -> Limits), which is the authoritative cap.
+    MAX_DAILY_EXTRACTIONS = int(os.getenv("MAX_DAILY_EXTRACTIONS", "50"))
+
     # --- Optional Slack alerting via n8n webhook ---
     N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL", "")
 

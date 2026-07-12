@@ -14,11 +14,11 @@ Run with:  python app.py   (after create_tables.py and, optionally, load_data.py
 from __future__ import annotations
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from flask import Flask, render_template, request, redirect, url_for, flash
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, select, func
 from sqlalchemy.orm import sessionmaker
 
 from config import Config
@@ -96,6 +96,19 @@ def ingest_document(db, index, source_type, title, text, company_ticker=None, fi
     return doc, False
 
 
+def daily_extraction_count(db) -> int:
+    """Count of RunHistory rows (i.e. Claude-calling extraction runs) in the
+    trailing 24 hours, used to enforce MAX_DAILY_EXTRACTIONS below."""
+    since = datetime.utcnow() - timedelta(hours=24)
+    return db.scalar(
+        select(func.count(RunHistory.id)).where(RunHistory.created_at >= since)
+    ) or 0
+
+
+def over_daily_extraction_cap(db) -> bool:
+    return daily_extraction_count(db) >= Config.MAX_DAILY_EXTRACTIONS
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -115,6 +128,12 @@ def brief():
         return redirect(url_for("brief"))
 
     db = SessionLocal()
+    if over_daily_extraction_cap(db):
+        flash(f"Daily extraction limit reached ({Config.MAX_DAILY_EXTRACTIONS} Claude-calling runs in the "
+              f"last 24h). This is a safety net to prevent runaway usage — raise MAX_DAILY_EXTRACTIONS "
+              f"in .env if this was intentional, or try again later.")
+        return redirect(url_for("brief"))
+
     index = get_index()
     extractor = get_extractor()
     document_ids = []
@@ -194,6 +213,12 @@ def monitor():
         return redirect(url_for("monitor"))
 
     db = SessionLocal()
+    if over_daily_extraction_cap(db):
+        flash(f"Daily extraction limit reached ({Config.MAX_DAILY_EXTRACTIONS} Claude-calling runs in the "
+              f"last 24h). This is a safety net to prevent runaway usage — raise MAX_DAILY_EXTRACTIONS "
+              f"in .env if this was intentional, or try again later.")
+        return redirect(url_for("monitor"))
+
     index = get_index()
     extractor = get_extractor()
 

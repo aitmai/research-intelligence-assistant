@@ -3,7 +3,7 @@
 <h1>Opportunity Brief</h1>
 <p>Upload research documents (PDF, TXT, or HTML) about a business idea and describe the topic.</p>
 
-<form method="POST" enctype="multipart/form-data">
+<form method="POST" enctype="multipart/form-data" id="brief-form">
   <label>Topic / business idea
     <input type="text" name="topic" placeholder="e.g. Embedded insurance for gig platforms" required>
   </label>
@@ -12,6 +12,19 @@
     <input type="file" name="documents" multiple required>
   </label>
 
-  <button type="submit">Generate Brief</button>
+  <button type="submit" id="brief-submit-btn">Generate Brief</button>
+  <p id="brief-status" class="status-message" hidden>
+    Generating brief — reading documents and querying Claude, this can take up to a minute…
+  </p>
 </form>
+
+<script>
+  document.getElementById("brief-form").addEventListener("submit", function () {
+    var btn = document.getElementById("brief-submit-btn");
+    btn.disabled = true;
+    btn.textContent = "Generating…";
+    document.getElementById("brief-status").hidden = false;
+  });
+</script>
 {% endblock %}
+
